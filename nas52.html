@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Game</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        
+        $(document).ready(function() {
+            // Variables
+            let selectedFlagCode = null;
+            let selectedOptionCode = null;
+            let correctScore = 0
+            let score = 0;
+     
+            
+
+           
+            // Function to update the score
+            function scoreUpdate() {
+                $('.score').text(score);
+            }
+
+
+            // Function to check if the selected flag and option match
+            function checkMatch() {
+                                if (selectedFlagCode && selectedOptionCode) {
+                                    if (selectedFlagCode === selectedOptionCode) {
+                                        score++;
+                                        scoreUpdate();
+                                        $(`.card[data-code="${selectedFlagCode}"]`).css('border', '4px solid green').addClass('unclickable');
+                                        $(`.optionCard[data-code="${selectedOptionCode}"]`).css('border', '4px solid green').addClass('unclickable');
+                                        if (score === correctScore) {
+                                            $('#congratulationMessage').show();
+                                        }
+                                    } else {
+                                        $(`.card[data-code="${selectedFlagCode}"]`).css('border', '4px solid white');
+                                        $(`.optionCard[data-code="${selectedOptionCode}"]`).css('border', '4px solid white');
+                                    }
+                                    selectedFlagCode = null;
+                                    selectedOptionCode = null;
+                                }
+                            }
+
+
+
+                            
+                        
+            $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/regions', function(data) {
+
+                // Extract the regions
+               
+                console.log(data);
+                data.forEach(function(region) {
+                    if (region !== 'Antarctic') { // Filter out Antarctic region
+                        $('#starter').append(`
+                            <input type="radio" id="${region}" name="region" value="${region}">
+                            <label for="${region}">${region}</label>
+                        `);
+                    }
+                });
+            });
+    
+            // Function to shuffle the cards
+            function shuffleArray(array) {
+                            for (let i = array.length - 1; i > 0; i--) {
+                                const j = Math.floor(Math.random() * (i + 1));
+                                [array[i], array[j]] = [array[j], array[i]];
+                            }
+                        }
+
+            $('#starter').on('click', 'input[type=radio]', function() {
+                
+                // Event listener for region selection
+                if ($(this).val() === 'Europe') {
+                    
+                    $('.starter2').show();
+                    $('#4x4').prop('checked', false);
+                    $('#4x2').prop('checked', false);
+                    $('#cardsId').empty();
+                    score = 0;
+                    scoreUpdate();
+                    $('.scoreDiv').css('visibility', 'hidden');
+                    $('.showAnswer').css('visibility', 'hidden');
+                    $('#answerDiv').empty();
+                    $('#congratulationMessage').css('display', 'none');
+                    
+
+
+
+                    // Get the country data for Europe
+                    $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/Europe', function(data) {
+               
+                        console.log(data);
+    
+                        // Extracts country codes
+                        let codes = data.map(country => country.code);
+    
+                        // Function to get a random element from an array
+                        function getRandomElement(arr) {
+                            return arr[Math.floor(Math.random() * arr.length)];
+                        }
+    
+                        // Event listener for grid size selection 4x4
+                        $('.starter2').on('click', '#4x4', function() {
+                            let isAnswerShown = true;
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 8;
+                            $('#congratulationMessage').css('display', 'none');
+                            
+                            
+                            
+                            while (selectedCodes.size < 8) {
+                                selectedCodes.add(getRandomElement(codes));
+
+                            }
+
+                            
+
+                            // Clear previous flags
+                            $('#answerDiv').empty();
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            
+                            
+                            
+                            
+    
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+                            
+                            
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+                            
+                        
+                            
+
+                            
+                        });
+
+
+                        // Event listener for grid size selection 4x2
+                        $('.starter2').on('click', '#4x2', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 4;
+                            $('#congratulationMessage').css('display', 'none');
+                            
+
+                            while (selectedCodes.size < 4) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+
+
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+                            // Event listener for option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            
+                           
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+                            
+                        });
+                    });
+                    
+                }
+            });
+
+
+
+
+            // Event listener for Africa region
+            $('#starter').on('click', 'input[type=radio]', function() {
+                if ($(this).val() === 'Africa') {
+                    $('.starter2').show();
+                    $('#4x4').prop('checked', false);
+                    $('#4x2').prop('checked', false);
+                    $('#cardsId').empty();
+                    score = 0;
+                    scoreUpdate();
+                    $('.scoreDiv').css('visibility', 'hidden');
+                    $('.showAnswer').css('visibility', 'hidden');
+                    $('#answerDiv').empty();
+                    $('#congratulationMessage').css('display', 'none');
+                    
+
+
+                    // Get the country data for Africa
+                    $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/Africa', function(data) {
+                        console.log(data);
+    
+                        // Extract country codes
+                        let codes = data.map(country => country.code);
+    
+                        // Function to get a random element from an array
+                        function getRandomElement(arr) {
+                            return arr[Math.floor(Math.random() * arr.length)];
+                        }
+    
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x4', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 8;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 8) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+                            // Event listener for option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+
+
+                        // Event listener for grid size selection 4x2
+                        $('.starter2').on('click', '#4x2', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 4;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 4) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+                            // Event listener for option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+                    });
+                }
+            });
+
+
+
+                // Event listener for Asia region
+            $('#starter').on('click', 'input[type=radio]', function() {
+                if ($(this).val() === 'Asia') {
+                    $('.starter2').show();
+                    $('#4x4').prop('checked', false);
+                    $('#4x2').prop('checked', false);
+                    $('#cardsId').empty();
+                    score = 0;
+                    scoreUpdate();
+                    $('.scoreDiv').css('visibility', 'hidden');
+                    $('.showAnswer').css('visibility', 'hidden');
+                    $('#answerDiv').empty();
+                    $('#congratulationMessage').css('display', 'none');
+
+
+                    // Get the country data for Asia
+                    $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/Asia', function(data) {
+                        console.log(data);
+    
+                        // Extract country codes
+                        let codes = data.map(country => country.code);
+    
+                        // Function to get a random element from an array
+                        function getRandomElement(arr) {
+                            return arr[Math.floor(Math.random() * arr.length)];
+                        }
+    
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x4', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 8;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 8) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                       <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+
+                        // Event listener for grid size selection 4x2
+                        $('.starter2').on('click', '#4x2', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 4;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 4) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                       <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+
+                        });
+                    });
+                }
+            });
+
+
+
+
+            // Event listener for Americas region
+            $('#starter').on('click', 'input[type=radio]', function() {
+                if ($(this).val() === 'Americas') {
+                    $('.starter2').show();
+                    $('#4x4').prop('checked', false);
+                    $('#4x2').prop('checked', false);
+                    $('#cardsId').empty();
+                    score = 0;
+                    scoreUpdate();
+                    $('.scoreDiv').css('visibility', 'hidden');
+                    $('.showAnswer').css('visibility', 'hidden');
+                    $('#answerDiv').empty();
+                    $('#congratulationMessage').css('display', 'none');
+
+                    // Get the country data for Americas
+                    $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/Americas', function(data) {
+                        console.log(data);
+
+                        // Extract country codes
+                        let codes = data.map(country => country.code);
+    
+                        // Function to get a random element from an array
+                        function getRandomElement(arr) {
+                            return arr[Math.floor(Math.random() * arr.length)];
+                        }
+    
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x4', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 8;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 8) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+    
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            //  Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x2', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 4;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 4) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+    
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+                    });
+                }
+            });
+
+
+            // Event listener for Oceania region
+            $('#starter').on('click', 'input[type=radio]', function() {
+                if ($(this).val() === 'Oceania') {
+                    $('.starter2').show();
+                    $('#4x4').prop('checked', false);
+                    $('#4x2').prop('checked', false);
+                    $('#cardsId').empty();
+                    score = 0;
+                    scoreUpdate();
+                    $('.scoreDiv').css('visibility', 'hidden');
+                    $('.showAnswer').css('visibility', 'hidden');
+                    $('#answerDiv').empty();
+                    $('#congratulationMessage').css('display', 'none');
+
+
+                    // Get the country data for Oceania
+                    $.getJSON('https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/Oceania', function(data) {
+                        console.log(data);
+    
+                        // Extract country codes
+                        let codes = data.map(country => country.code);
+    
+                        // Function to get a random element from an array
+                        function getRandomElement(arr) {
+                            return arr[Math.floor(Math.random() * arr.length)];
+                        }
+    
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x4', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 8;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 8) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+                            
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+                        });
+                        
+
+                        // Event listener for grid size selection
+                        $('.starter2').on('click', '#4x2', function() {
+                            let selectedCodes = new Set();
+                            $('.scoreDiv').css('visibility', 'visible');
+                            $('.showAnswer').css('visibility', 'visible');
+                            correctScore = 4;
+                            $('#congratulationMessage').css('display', 'none');
+
+                            while (selectedCodes.size < 4) {
+                                selectedCodes.add(getRandomElement(codes));
+                            }
+    
+                            // Clear previous flags
+                            $('#cardsId').empty();
+                            score = 0;
+                            scoreUpdate();
+                            $('#answerDiv').empty();
+                            
+                            // Select the countries with the random codes
+                            selectedCodes.forEach(function(code) {
+                                let country = data.find(country => country.code === code);
+                                $('#cardsId').append(`
+                                    <div class="card" data-code="${country.code}">
+                                        <img src="${country.flag}" alt="${country.name}">
+                                    </div>
+                                    <div class="optionCard" data-code="${country.code}">
+                                        <p>${country.name} <br> Capital: ${country.capital}</p>
+                                    </div>
+                                `);
+                            });
+                            // Shuffle the cards in #cardsId
+                            let cards = $('#cardsId .card, #cardsId .optionCard').toArray();
+                            shuffleArray(cards);
+                            $('#cardsId').empty().append(cards);
+
+                            // Add click event listeners to the cards
+                            $('.card').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.card').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedFlagCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            });
+
+                            // Add click event listeners to the option cards
+                            $('.optionCard').on('click', function() {
+                                if (!$(this).hasClass('unclickable')) {
+                                    $('.optionCard').not('.unclickable').css('border', '4px solid white');
+                                    $(this).css('border', '4px solid #FFD700');
+                                    selectedOptionCode = $(this).data('code');
+                                    checkMatch();
+                                }
+                            }); 
+
+                            // Event listener for show answer button
+                            $('#showAnswer').on('click', function() {
+                                $('#answerDiv').empty();
+                            $('#answerDiv').show();
+                                selectedCodes.forEach(function(code) {
+                                 let country = data.find(country => country.code === code);
+                                    $('#answerDiv').append(`
+                                     <div class="cardAnswer" data-code="${country.code}">
+                                     <img src="${country.flag}" alt="${country.name}">
+                                         <p>${country.name} <br> Capital: ${country.capital}</p>
+                                        </div>
+                                `);
+                                });
+                             
+                                
+                            });
+
+
+
+                        });
+                    });
+                }
+            });
+        });
+
+       
+    </script>
+
+<style>
+
+/** CSS for the game **/
+
+
+/** the following 4 are used for the cards to make them change their appearance when the user interacts with them!  **/
+.unclickable {
+            pointer-events: none;
+        }
+
+
+.selected {
+            border: 4px solid #FFD700;
+        }
+
+        .matched {
+            border: 4px solid green;
+            pointer-events: none;
+        }
+
+        .mismatched {
+            border: 4px solid red;
+        }
+
+        
+        /** Sets the body style **/
+    body {
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        background-color: #121212;
+        color: white;
+        font-family: monospace;
+        align-items: center;
+    }
+    
+    /** Sets the div style and position for the generated cards**/
+    .cardsClass {
+        display: grid;
+            grid-template-columns: repeat(4 , 310px);
+        justify-content: center;
+        width: 70%;
+        margin-top: 7rem;
+    }
+
+
+    
+    /** Sets the country images appearence **/
+    img {
+        width: 295px;
+        height: 170px;
+        transition: 0.3s;
+        border-radius: 16px;
+
+    }
+
+    /** Sets style and position for the cards with the image of the countries  **/
+    .card {
+        width: 295px;
+        height: 170px;
+        border: 4px, solid, white;
+        transition: 0.3s;
+        border-radius: 20px;
+        margin: 3px;
+    }
+
+    /** Sets the generated answers options style and position**/
+
+    .optionCard{
+        width: 295px;
+        height: 170px;
+        border: 4px, solid, white;
+        transition: 0.3s;
+        margin: 4px;
+        padding: 0;
+        border-radius: 20px;
+    }
+
+    .cardsOptions {
+        display: grid;
+        grid-template-columns: repeat(4);
+        justify-content: center;
+        width: 80%;
+        margin: 0;
+        padding: 0;
+        font-size: 10px;
+        border-radius: 20px;
+    }
+
+    /** hover and active make the border of the card yellow and the card get bigger when the user hover over it. 
+    Active make a animation when the user clicks on the card and restores it very quickly to its original position**/
+    .optionCard:hover {
+        cursor: pointer;
+        border: 4px, solid, #FFD700;
+        transform: scale(1.03);
+    }
+
+    .optionCard:active {
+        transform: scale(1.0);
+        transition: 0.05s;
+    }
+
+    /** Sets font sizes and margins for the following elements**/
+    h1 {
+        font-size: 5em;
+        margin-bottom: 4rem;
+    }
+
+    h3 {
+        font-size: 2.5em;
+    }
+
+    p {
+        font-size: 2em;
+    }
+
+    label {
+        font-size: 1.5em;
+        margin-right: 0.6rem;
+    }
+
+    .starter2 {
+        margin-top: 4rem;
+    }
+
+    /** all the following are made to create little transitions effects when the user interacts with the cards.**/
+    input:hover {
+        cursor: pointer;
+    }
+
+    label:hover {
+        cursor: pointer;
+    }
+
+    img:hover {
+        cursor: pointer;
+        transition: 0.3s;
+        transform: scale(1.0);
+    }
+
+    img:active {
+        transform: scale(1);
+        transition: 0.05s;
+    }
+
+    .card:hover {
+        cursor: pointer;
+        transition: 0.3s;
+        transform: scale(1.03);
+        border: 4px, solid, #FFD700;
+    }
+
+    .card:active {
+        transform: scale(1);
+        transition: 0.05s;
+    }
+
+    .scoreDiv {
+        margin-top: 2rem;
+        display: flex;
+        visibility: hidden;
+    }
+
+    .showAnswer {
+        margin-top: 2rem;
+        padding: 20px;
+        font-size: 15px;
+        background-color: #e3e3e3;
+        border: 3px, solid, black;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s;
+        visibility: hidden;
+    }   
+
+    .showAnswer:hover {
+        background-color: #121212;
+        border:3px, solid, #e3e3e3;
+        color: white;
+        transition: 0.3s;
+    }
+
+    .showAnswer:active {
+        background-color: #e3e3e3;
+        color: #121212;
+    }
+
+    #answerDiv {
+            display: none;
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(4, 310px);
+        }
+
+/** makes the content resize based on the screen size widht**/
+        @media screen and (max-width: 1200px) {
+        .cardsClass, #answerDiv {
+            grid-template-columns: repeat(2, 310px);
+        }
+    }
+
+
+    .description {
+        font-size: 2em;
+        margin-bottom: 4rem;
+    }
+
+    /** Sets the congrats message initially to not display**/
+    .congratulationMessage {
+        font-size: 1em;
+        margin-top: 2rem;
+        display: none;
+        
+    }
+
+</style>
+
+</head>
+
+<body>
+
+    <!-- Contains the starting section of the game where the user selects the region! -->
+    <div id="starter" class="starter1">
+        <h1>Match Countries with their flags</h1>
+        <p class="description">Select your favorite region and try to match the most amount of countries with their names!</p>
+        <h3>Select a region:</h3>
+    </div>
+
+
+    <!-- this section follows the starting section, and contains the grid size selection which creates the boards! -->
+    <div class="starter2" hidden>
+        <h3>Choose the board size:</h3>
+        <input type="radio" id="4x2" name="size"></input>
+        <label for="4x2">4 x 2</label>
+        <input type="radio" id="4x4" name="size"></input>
+        <label id="label4x4" for="4x4">4 x 4</label>
+    </div>
+
+
+    <!-- This is where the cards are generated after the user interacts with the grid-section! -->
+    <div class="cardsClass" id="cardsId">
+
+    </div>
+
+    <!-- This is where the congratulation message is going to be displayed once the user matches all the flags! -->
+    <div id="congratulationMessage" class="congratulationMessage">
+        <p>Congratulations! You matched all the country flags!</p>
+    </div>
+
+    <!-- This is where the score is displayed -->
+    <div class="scoreDiv">
+        <p> Score:  <p class="score">0</p></p>
+    </div>
+
+
+    <!-- This is the button which displays the answers -->
+    <button class="showAnswer" id="showAnswer">Show Answer</button>
+
+
+    <!-- This is where the answers are displayed -->
+    <div class="answerDiv" id="answerDiv">
+        
+    </div>
+ 
+</body>
+</html>
